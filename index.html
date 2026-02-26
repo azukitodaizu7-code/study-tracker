@@ -2,7 +2,1118 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" /><!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>勉強・非勉強トラッカー（同期版）</title>
+  <style>
+    :root{
+      --bg:#0f172a;
+      --panel:#111827;
+      --panel2:#1f2937;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --line:#334155;
+      --accent:#22c55e;
+      --accent2:#3b82f6;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --study:#22c55e;
+      --idle:#f59e0b;
+      --stop:#64748b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:linear-gradient(180deg,#0b1220,#0f172a 45%,#111827);
+      color:var(--text);
+      line-height:1.5;
+    }
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:20px;
+    }
+    h1,h2,h3,p{margin:0}
+    .header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      margin-bottom:18px;
+      flex-wrap:wrap;
+    }
+    .sub{
+      color:var(--muted);
+      margin-top:6px;
+      font-size:14px;
+    }
+    .grid{
+      display:grid;
+      gap:16px;
+    }
+    .grid-2{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+    .grid-3{
+      grid-template-columns:repeat(3,minmax(0,1fr));
+    }
+    .card{
+      background:rgba(17,24,39,0.9);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:18px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.2);
+    }
+    .row{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .space{
+      justify-content:space-between;
+    }
+    label{
+      display:block;
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    input, button, select {
+      font:inherit;
+      border-radius:12px;
+      border:1px solid var(--line);
+    }
+    input{
+      width:100%;
+      padding:12px 14px;
+      background:#0b1220;
+      color:var(--text);
+    }
+    button{
+      padding:12px 16px;
+      color:white;
+      background:#1e293b;
+      cursor:pointer;
+      transition:transform .05s ease, opacity .2s ease;
+    }
+    button:hover{opacity:.95}
+    button:active{transform:translateY(1px)}
+    button.primary{background:var(--accent2)}
+    button.study{background:var(--study)}
+    button.idle{background:var(--idle); color:#111827}
+    button.stop{background:var(--stop)}
+    button.danger{background:var(--danger)}
+    .status-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#0b1220;
+      font-weight:600;
+      min-width:fit-content;
+    }
+    .dot{
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      background:#64748b;
+      box-shadow:0 0 10px rgba(255,255,255,0.3);
+    }
+    .dot.study{background:var(--study)}
+    .dot.idle{background:var(--idle)}
+    .dot.stop{background:var(--stop)}
+    .big-time{
+      font-size:clamp(28px,5vw,48px);
+      font-weight:800;
+      letter-spacing:.02em;
+      margin-top:10px;
+    }
+    .metric{
+      background:#0b1220;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+    }
+    .metric .name{
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    .metric .value{
+      font-size:28px;
+      font-weight:800;
+    }
+    .metric .small{
+      font-size:14px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+    .muted{color:var(--muted)}
+    .tiny{font-size:12px}
+    .ok{color:#86efac}
+    .warn{color:#fcd34d}
+    .danger-t{color:#fca5a5}
+    .hidden{display:none !important}
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+    }
+    th,td{
+      text-align:left;
+      padding:10px 8px;
+      border-bottom:1px solid rgba(148,163,184,0.15);
+      vertical-align:top;
+    }
+    th{
+      color:var(--muted);
+      font-weight:600;
+      font-size:13px;
+    }
+    .pill{
+      display:inline-flex;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      border:1px solid transparent;
+    }
+    .pill.study{background:rgba(34,197,94,.15); color:#86efac; border-color:rgba(34,197,94,.25)}
+    .pill.idle{background:rgba(245,158,11,.18); color:#fcd34d; border-color:rgba(245,158,11,.25)}
+    .pill.stop{background:rgba(100,116,139,.16); color:#cbd5e1; border-color:rgba(100,116,139,.25)}
+    .hint{
+      background:rgba(59,130,246,.12);
+      border:1px solid rgba(59,130,246,.25);
+      color:#dbeafe;
+      padding:12px 14px;
+      border-radius:14px;
+      margin-top:12px;
+      font-size:14px;
+    }
+    .mono{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      word-break:break-all;
+    }
+    @media (max-width: 860px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .row.stack-mobile>*{width:100%}
+      button{width:100%}
+      .header{margin-bottom:14px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1>勉強・非勉強トラッカー（同期版）</h1>
+        <p class="sub">PC / Android / iPhone で同じ記録を共有できます。Supabase の無料枠で動かせる静的HTMLです。</p>
+      </div>
+      <div class="status-badge">
+        <span id="statusDot" class="dot stop"></span>
+        <span id="statusText">未接続</span>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <section class="card">
+        <div class="row space">
+          <h2>1. 接続設定</h2>
+          <button id="clearConfigBtn">設定を消す</button>
+        </div>
+        <div style="margin-top:14px">
+          <label for="supabaseUrl">Supabase URL</label>
+          <input id="supabaseUrl" placeholder="https://xxxxx.supabase.co" />
+        </div>
+        <div style="margin-top:12px">
+          <label for="supabaseAnonKey">Supabase Anon Key</label>
+          <input id="supabaseAnonKey" placeholder="eyJ..." />
+        </div>
+        <div class="row stack-mobile" style="margin-top:14px">
+          <button class="primary" id="saveConfigBtn">接続設定を保存</button>
+          <button id="testConnectionBtn">接続テスト</button>
+        </div>
+        <div class="hint">
+          先に README と SQL を見て、Supabase 側の設定を済ませてください。
+        </div>
+        <p id="configMessage" class="muted tiny" style="margin-top:10px"></p>
+      </section>
+
+      <section class="card">
+        <div class="row space">
+          <h2>2. ログイン</h2>
+          <button id="logoutBtn" class="danger">ログアウト</button>
+        </div>
+        <div style="margin-top:14px">
+          <label for="emailInput">メールアドレス</label>
+          <input id="emailInput" placeholder="you@example.com" />
+        </div>
+        <div class="row stack-mobile" style="margin-top:14px">
+          <button class="primary" id="loginBtn">マジックリンクを送る</button>
+          <button id="refreshSessionBtn">ログイン状態を更新</button>
+        </div>
+        <p class="muted tiny" style="margin-top:10px">
+          ログインメールのリンクを踏むと、このページに戻って自動ログインします。
+        </p>
+        <p id="authMessage" class="muted tiny" style="margin-top:8px"></p>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:16px">
+      <div class="row space">
+        <div>
+          <h2>3. 記録</h2>
+          <p class="sub">状態を切り替えるだけで、全端末に反映されます。</p>
+        </div>
+        <div class="muted tiny" id="userInfo">未ログイン</div>
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <button class="study" id="studyBtn">勉強に切替</button>
+        <button class="idle" id="idleBreakBtn">休憩に切替</button>
+        <button class="idle" id="idleYoutubeBtn">YouTubeに切替</button>
+        <button class="idle" id="idleOtherBtn">その他に切替</button>
+        <button class="stop" id="stopBtn">停止</button>
+        <button id="syncNowBtn">今すぐ同期</button>
+      </div>
+      <p class="muted tiny" style="margin-top:10px">非勉強は <strong>休憩 / YouTube / その他</strong> に分けて記録できます。</p>
+
+      <div class="grid grid-3" style="margin-top:16px">
+        <div class="metric">
+          <div class="name">現在の状態</div>
+          <div class="value" id="currentModeLabel">停止中</div>
+          <div class="small" id="currentStartedAt">-</div>
+        </div>
+        <div class="metric">
+          <div class="name">現在の継続時間</div>
+          <div class="value" id="currentElapsed">00:00:00</div>
+          <div class="small">開いている端末で1秒ごと更新</div>
+        </div>
+        <div class="metric">
+          <div class="name">最終同期</div>
+          <div class="value" id="lastSyncLabel" style="font-size:22px">未同期</div>
+          <div class="small" id="lastSyncSub">-</div>
+        </div>
+      </div>
+      <p id="trackerMessage" class="muted tiny" style="margin-top:10px"></p>
+    </section>
+
+    <div class="grid grid-3" style="margin-top:16px">
+      <section class="card">
+        <h2>今日</h2>
+        <div class="metric" style="margin-top:12px">
+          <div class="name">勉強時間</div>
+          <div class="value" id="todayStudy">00:00:00</div>
+        </div>
+        <div class="metric" style="margin-top:12px">
+          <div class="name">非勉強時間</div>
+          <div class="value" id="todayIdle">00:00:00</div>
+          <div class="small">休憩 <span id="todayIdleBreak">00:00:00</span> / YouTube <span id="todayIdleYoutube">00:00:00</span> / その他 <span id="todayIdleOther">00:00:00</span></div>
+        </div>
+        <div class="metric" style="margin-top:12px">
+          <div class="name">勉強率</div>
+          <div class="value" id="todayRate">0%</div>
+          <div class="small">勉強 ÷ (勉強 + 非勉強)</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>直近7日</h2>
+        <div class="metric" style="margin-top:12px">
+          <div class="name">勉強時間</div>
+          <div class="value" id="weekStudy">00:00:00</div>
+        </div>
+        <div class="metric" style="margin-top:12px">
+          <div class="name">非勉強時間</div>
+          <div class="value" id="weekIdle">00:00:00</div>
+        </div>
+        <div class="metric" style="margin-top:12px">
+          <div class="name">勉強開始回数</div>
+          <div class="value" id="weekStarts">0</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>直近30日</h2>
+        <div class="metric" style="margin-top:12px">
+          <div class="name">勉強時間</div>
+          <div class="value" id="monthStudy">00:00:00</div>
+        </div>
+        <div class="metric" style="margin-top:12px">
+          <div class="name">非勉強時間</div>
+          <div class="value" id="monthIdle">00:00:00</div>
+        </div>
+        <div class="metric" style="margin-top:12px">
+          <div class="name">最長連続勉強</div>
+          <div class="value" id="monthLongestStudy">00:00:00</div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:16px">
+      <div class="row space">
+        <div>
+          <h2>日別集計（直近30日）</h2>
+          <p class="sub">日付またぎは自動で分割して集計します。</p>
+        </div>
+        <button id="exportCsvBtn">CSV出力</button>
+      </div>
+      <div style="margin-top:14px; overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>日付</th>
+              <th>勉強</th>
+              <th>非勉強</th>
+              <th>休憩</th>
+              <th>YouTube</th>
+              <th>その他</th>
+              <th>勉強率</th>
+            </tr>
+          </thead>
+          <tbody id="dailyTableBody"></tbody>
+        </table>
+      </div>
+      <p id="exportMessage" class="muted tiny" style="margin-top:10px"></p>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h2>最近の記録</h2>
+      <div style="margin-top:14px; overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>状態</th>
+              <th>開始</th>
+              <th>終了</th>
+              <th>長さ</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const STORAGE_KEYS = {
+      url: 'study_tracker_supabase_url',
+      anon: 'study_tracker_supabase_anon',
+      email: 'study_tracker_last_email'
+    };
+
+    const IDLE_CATEGORIES = ['break', 'youtube', 'other'];
+
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      supabaseUrl: $('supabaseUrl'),
+      supabaseAnonKey: $('supabaseAnonKey'),
+      saveConfigBtn: $('saveConfigBtn'),
+      testConnectionBtn: $('testConnectionBtn'),
+      clearConfigBtn: $('clearConfigBtn'),
+      configMessage: $('configMessage'),
+
+      emailInput: $('emailInput'),
+      loginBtn: $('loginBtn'),
+      refreshSessionBtn: $('refreshSessionBtn'),
+      logoutBtn: $('logoutBtn'),
+      authMessage: $('authMessage'),
+
+      statusText: $('statusText'),
+      statusDot: $('statusDot'),
+      userInfo: $('userInfo'),
+      studyBtn: $('studyBtn'),
+      idleBreakBtn: $('idleBreakBtn'),
+      idleYoutubeBtn: $('idleYoutubeBtn'),
+      idleOtherBtn: $('idleOtherBtn'),
+      stopBtn: $('stopBtn'),
+      syncNowBtn: $('syncNowBtn'),
+      trackerMessage: $('trackerMessage'),
+      currentModeLabel: $('currentModeLabel'),
+      currentStartedAt: $('currentStartedAt'),
+      currentElapsed: $('currentElapsed'),
+      lastSyncLabel: $('lastSyncLabel'),
+      lastSyncSub: $('lastSyncSub'),
+
+      todayStudy: $('todayStudy'),
+      todayIdle: $('todayIdle'),
+      todayIdleBreak: $('todayIdleBreak'),
+      todayIdleYoutube: $('todayIdleYoutube'),
+      todayIdleOther: $('todayIdleOther'),
+      todayRate: $('todayRate'),
+      weekStudy: $('weekStudy'),
+      weekIdle: $('weekIdle'),
+      weekStarts: $('weekStarts'),
+      monthStudy: $('monthStudy'),
+      monthIdle: $('monthIdle'),
+      monthLongestStudy: $('monthLongestStudy'),
+
+      dailyTableBody: $('dailyTableBody'),
+      historyTableBody: $('historyTableBody'),
+      exportCsvBtn: $('exportCsvBtn'),
+      exportMessage: $('exportMessage'),
+    };
+
+    let supabase = null;
+    let currentSession = null;
+    let currentUser = null;
+    let sessions30 = [];
+    let timerId = null;
+    let syncTickId = null;
+    let hardRefreshId = null;
+    let lastSync = null;
+
+    init();
+
+    async function init() {
+      loadSavedConfig();
+      await bootClientFromSavedConfig();
+      bindEvents();
+      startClock();
+    }
+
+    function bindEvents() {
+      els.saveConfigBtn.addEventListener('click', async () => {
+        const url = els.supabaseUrl.value.trim();
+        const anon = els.supabaseAnonKey.value.trim();
+        if (!url || !anon) {
+          setMessage(els.configMessage, 'URL と Anon Key を入れてください。', 'danger');
+          return;
+        }
+        localStorage.setItem(STORAGE_KEYS.url, url);
+        localStorage.setItem(STORAGE_KEYS.anon, anon);
+        setMessage(els.configMessage, '保存しました。クライアントを初期化しています…', 'ok');
+        await bootClientFromSavedConfig(true);
+      });
+
+      els.testConnectionBtn.addEventListener('click', async () => {
+        if (!supabase) {
+          setMessage(els.configMessage, '先に接続設定を保存してください。', 'warn');
+          return;
+        }
+        try {
+          const { error } = await supabase.auth.getSession();
+          if (error) throw error;
+          setMessage(els.configMessage, '接続OKです。', 'ok');
+        } catch (e) {
+          setMessage(els.configMessage, '接続に失敗しました: ' + readableError(e), 'danger');
+        }
+      });
+
+      els.clearConfigBtn.addEventListener('click', async () => {
+        localStorage.removeItem(STORAGE_KEYS.url);
+        localStorage.removeItem(STORAGE_KEYS.anon);
+        els.supabaseUrl.value = '';
+        els.supabaseAnonKey.value = '';
+        supabase = null;
+        currentUser = null;
+        currentSession = null;
+        sessions30 = [];
+        stopSyncLoops();
+        renderAll();
+        setStatus('未接続', 'stop');
+        setMessage(els.configMessage, '接続設定を消しました。', 'warn');
+      });
+
+      els.loginBtn.addEventListener('click', signInWithMagicLink);
+      els.refreshSessionBtn.addEventListener('click', refreshSession);
+      els.logoutBtn.addEventListener('click', signOut);
+      els.studyBtn.addEventListener('click', () => switchMode('study'));
+      els.idleBreakBtn.addEventListener('click', () => switchMode('idle', 'break'));
+      els.idleYoutubeBtn.addEventListener('click', () => switchMode('idle', 'youtube'));
+      els.idleOtherBtn.addEventListener('click', () => switchMode('idle', 'other'));
+      els.stopBtn.addEventListener('click', () => switchMode('stop'));
+      els.syncNowBtn.addEventListener('click', refreshAllFromServer);
+      els.exportCsvBtn.addEventListener('click', exportCsv);
+      window.addEventListener('focus', refreshAllFromServer);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) refreshAllFromServer();
+      });
+    }
+
+    function loadSavedConfig() {
+      const url = localStorage.getItem(STORAGE_KEYS.url) || '';
+      const anon = localStorage.getItem(STORAGE_KEYS.anon) || '';
+      const email = localStorage.getItem(STORAGE_KEYS.email) || '';
+      els.supabaseUrl.value = url;
+      els.supabaseAnonKey.value = anon;
+      els.emailInput.value = email;
+    }
+
+    async function bootClientFromSavedConfig(showMessage = false) {
+      const url = localStorage.getItem(STORAGE_KEYS.url);
+      const anon = localStorage.getItem(STORAGE_KEYS.anon);
+      if (!url || !anon) {
+        setStatus('未接続', 'stop');
+        renderAll();
+        return;
+      }
+
+      try {
+        supabase = createClient(url, anon, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+          }
+        });
+
+        supabase.auth.onAuthStateChange(async (_event, session) => {
+          currentUser = session?.user || null;
+          updateUserBlock();
+          if (currentUser) {
+            startSyncLoops();
+            await refreshAllFromServer();
+          } else {
+            currentSession = null;
+            sessions30 = [];
+            stopSyncLoops();
+            renderAll();
+            setStatus('未ログイン', 'stop');
+          }
+        });
+
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+
+        currentUser = data?.session?.user || null;
+        updateUserBlock();
+
+        if (currentUser) {
+          setStatus('ログイン済み', 'stop');
+          startSyncLoops();
+          await refreshAllFromServer();
+          if (showMessage) setMessage(els.configMessage, '接続設定を保存して、ログイン状態を復元しました。', 'ok');
+        } else {
+          setStatus('接続OK / 未ログイン', 'stop');
+          if (showMessage) setMessage(els.configMessage, '接続設定を保存しました。次はログインしてください。', 'ok');
+        }
+      } catch (e) {
+        setStatus('接続失敗', 'stop');
+        setMessage(els.configMessage, '初期化に失敗しました: ' + readableError(e), 'danger');
+      }
+    }
+
+    async function signInWithMagicLink() {
+      if (!supabase) {
+        setMessage(els.authMessage, '先に接続設定を保存してください。', 'warn');
+        return;
+      }
+      const email = els.emailInput.value.trim();
+      if (!email) {
+        setMessage(els.authMessage, 'メールアドレスを入れてください。', 'warn');
+        return;
+      }
+
+      localStorage.setItem(STORAGE_KEYS.email, email);
+      try {
+        const redirectTo = window.location.origin + window.location.pathname;
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: redirectTo,
+            shouldCreateUser: true
+          }
+        });
+        if (error) throw error;
+        setMessage(els.authMessage, 'ログインメールを送りました。メールのリンクからこのページに戻ってください。', 'ok');
+      } catch (e) {
+        setMessage(els.authMessage, 'ログインメール送信に失敗しました: ' + readableError(e), 'danger');
+      }
+    }
+
+    async function refreshSession() {
+      if (!supabase) return;
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        currentUser = data?.session?.user || null;
+        updateUserBlock();
+        if (currentUser) {
+          await refreshAllFromServer();
+          setMessage(els.authMessage, 'ログイン状態を更新しました。', 'ok');
+        } else {
+          setMessage(els.authMessage, 'まだログインしていません。メールのリンクを開いてください。', 'warn');
+        }
+      } catch (e) {
+        setMessage(els.authMessage, '更新に失敗しました: ' + readableError(e), 'danger');
+      }
+    }
+
+    async function signOut() {
+      if (!supabase) return;
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        currentUser = null;
+        currentSession = null;
+        sessions30 = [];
+        stopSyncLoops();
+        renderAll();
+        setStatus('ログアウト済み', 'stop');
+        setMessage(els.authMessage, 'ログアウトしました。', 'ok');
+      } catch (e) {
+        setMessage(els.authMessage, 'ログアウト失敗: ' + readableError(e), 'danger');
+      }
+    }
+
+    async function switchMode(mode, idleCategory = null) {
+      if (!supabase || !currentUser) {
+        setMessage(els.trackerMessage, '先にログインしてください。', 'warn');
+        return;
+      }
+      try {
+        const { error } = await supabase.rpc('switch_tracker_mode_v2', {
+          p_mode: mode,
+          p_idle_category: idleCategory
+        });
+        if (error) throw error;
+        await refreshAllFromServer();
+        const labels = {
+          study: '勉強に切替えました。',
+          stop: '停止しました。'
+        };
+        if (mode === 'idle') {
+          labels.idle = `${idleCategoryLabel(idleCategory)} に切替えました。`;
+        }
+        setMessage(els.trackerMessage, labels[mode], 'ok');
+      } catch (e) {
+        const msg = readableError(e);
+        if (msg.includes('switch_tracker_mode_v2') || msg.includes('idle_category') || msg.includes('column')) {
+          setMessage(els.trackerMessage, 'Supabase 側の移行SQLがまだです。新しい migration SQL を SQL Editor で実行してください。', 'warn');
+          return;
+        }
+        setMessage(els.trackerMessage, '状態変更に失敗しました: ' + msg, 'danger');
+      }
+    }
+
+    async function refreshAllFromServer() {
+      if (!supabase || !currentUser) {
+        renderAll();
+        return;
+      }
+      try {
+        await Promise.all([fetchCurrentSession(), fetchLast30Days()]);
+        lastSync = new Date();
+        renderAll();
+      } catch (e) {
+        setMessage(els.trackerMessage, '同期に失敗しました: ' + readableError(e), 'danger');
+      }
+    }
+
+    async function fetchCurrentSession() {
+      const { data, error } = await supabase
+        .from('study_sessions')
+        .select('id, mode, idle_category, started_at, ended_at, created_at, updated_at')
+        .is('ended_at', null)
+        .order('started_at', { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      currentSession = (data && data[0]) ? data[0] : null;
+    }
+
+    async function fetchLast30Days() {
+      const start = new Date();
+      start.setDate(start.getDate() - 30);
+      start.setHours(0,0,0,0);
+
+      const { data, error } = await supabase
+        .from('study_sessions')
+        .select('id, mode, idle_category, started_at, ended_at, created_at, updated_at')
+        .or(`started_at.gte.${start.toISOString()},ended_at.gte.${start.toISOString()},ended_at.is.null`)
+        .order('started_at', { ascending: false })
+        .limit(5000);
+      if (error) throw error;
+      sessions30 = data || [];
+    }
+
+    function renderLiveViews() {
+      renderCurrentElapsed();
+      if (currentUser) {
+        renderSummary();
+        renderDailyTable();
+        renderHistory();
+      }
+    }
+
+    function startClock() {
+      clearInterval(timerId);
+      renderLiveViews();
+      timerId = setInterval(() => {
+        renderLiveViews();
+      }, 1000);
+    }
+
+    function startSyncLoops() {
+      stopSyncLoops();
+      syncTickId = setInterval(async () => {
+        await fetchCurrentSession();
+        renderAll();
+      }, 15000);
+      hardRefreshId = setInterval(refreshAllFromServer, 60000);
+    }
+
+    function stopSyncLoops() {
+      clearInterval(syncTickId);
+      clearInterval(hardRefreshId);
+      syncTickId = null;
+      hardRefreshId = null;
+    }
+
+    function renderAll() {
+      renderCurrentBlock();
+      renderSummary();
+      renderDailyTable();
+      renderHistory();
+      renderCurrentElapsed();
+      renderLastSync();
+      updateUserBlock();
+    }
+
+    function updateUserBlock() {
+      if (!currentUser) {
+        els.userInfo.textContent = '未ログイン';
+        return;
+      }
+      els.userInfo.textContent = 'ログイン中: ' + currentUser.email;
+    }
+
+    function renderCurrentBlock() {
+      if (currentSession) {
+        const kind = currentSession.mode === 'study' ? 'study' : 'idle';
+        const label = currentSession.mode === 'study'
+          ? '勉強中'
+          : `非勉強中（${idleCategoryLabel(currentSession.idle_category)}）`;
+        els.currentModeLabel.textContent = label;
+        els.currentStartedAt.textContent = '開始: ' + formatDateTime(currentSession.started_at);
+        setStatus(label, kind);
+      } else if (currentUser) {
+        els.currentModeLabel.textContent = '停止中';
+        els.currentStartedAt.textContent = '開始: -';
+        setStatus('停止中', 'stop');
+      } else if (supabase) {
+        els.currentModeLabel.textContent = '未ログイン';
+        els.currentStartedAt.textContent = '開始: -';
+        setStatus('接続OK / 未ログイン', 'stop');
+      } else {
+        els.currentModeLabel.textContent = '未接続';
+        els.currentStartedAt.textContent = '開始: -';
+        setStatus('未接続', 'stop');
+      }
+    }
+
+    function renderCurrentElapsed() {
+      if (!currentSession) {
+        els.currentElapsed.textContent = '00:00:00';
+        return;
+      }
+      const start = new Date(currentSession.started_at);
+      const now = new Date();
+      const seconds = Math.max(0, Math.floor((now - start) / 1000));
+      els.currentElapsed.textContent = formatSeconds(seconds);
+    }
+
+    function renderLastSync() {
+      if (!lastSync) {
+        els.lastSyncLabel.textContent = '未同期';
+        els.lastSyncSub.textContent = '-';
+        return;
+      }
+      els.lastSyncLabel.textContent = lastSync.toLocaleTimeString();
+      els.lastSyncSub.textContent = lastSync.toLocaleDateString();
+    }
+
+    function renderSummary() {
+      const daily = buildDailyBuckets(sessions30, 30);
+      const todayKey = dateKey(new Date());
+      const last7Keys = getRecentDateKeys(7);
+      const last30Keys = getRecentDateKeys(30);
+
+      const today = daily[todayKey] || blankBucket();
+      const week = sumKeys(daily, last7Keys);
+      const month = sumKeys(daily, last30Keys);
+
+      els.todayStudy.textContent = formatSeconds(today.study);
+      els.todayIdle.textContent = formatSeconds(today.idle);
+      els.todayIdleBreak.textContent = formatSeconds(today.break);
+      els.todayIdleYoutube.textContent = formatSeconds(today.youtube);
+      els.todayIdleOther.textContent = formatSeconds(today.other);
+      els.todayRate.textContent = percent(today.study, today.study + today.idle);
+
+      els.weekStudy.textContent = formatSeconds(week.study);
+      els.weekIdle.textContent = formatSeconds(week.idle);
+      els.weekStarts.textContent = String(countStarts(sessions30, 7));
+
+      els.monthStudy.textContent = formatSeconds(month.study);
+      els.monthIdle.textContent = formatSeconds(month.idle);
+      els.monthLongestStudy.textContent = formatSeconds(longestStudySeconds(sessions30, 30));
+    }
+
+    function renderDailyTable() {
+      const daily = buildDailyBuckets(sessions30, 30);
+      const keys = getRecentDateKeys(30).reverse();
+      els.dailyTableBody.innerHTML = keys.map((key) => {
+        const row = daily[key] || blankBucket();
+        const total = row.study + row.idle;
+        return `
+          <tr>
+            <td>${escapeHtml(key)}</td>
+            <td>${formatSeconds(row.study)}</td>
+            <td>${formatSeconds(row.idle)}</td>
+            <td>${formatSeconds(row.break)}</td>
+            <td>${formatSeconds(row.youtube)}</td>
+            <td>${formatSeconds(row.other)}</td>
+            <td>${percent(row.study, total)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderHistory() {
+      const rows = [...sessions30]
+        .sort((a,b) => new Date(b.started_at) - new Date(a.started_at))
+        .slice(0, 20);
+
+      els.historyTableBody.innerHTML = rows.map((s) => {
+        const ended = s.ended_at ? formatDateTime(s.ended_at) : '継続中';
+        const dur = sessionDurationSeconds(s);
+        const cls = s.mode === 'study' ? 'study' : 'idle';
+        const label = s.mode === 'study' ? '勉強' : `非勉強 / ${idleCategoryLabel(s.idle_category)}`;
+        return `
+          <tr>
+            <td><span class="pill ${cls}">${escapeHtml(label)}</span></td>
+            <td>${formatDateTime(s.started_at)}</td>
+            <td>${ended}</td>
+            <td>${formatSeconds(dur)}</td>
+          </tr>
+        `;
+      }).join('') || `<tr><td colspan="4" class="muted">まだ記録がありません。</td></tr>`;
+    }
+
+    async function exportCsv() {
+      if (!supabase || !currentUser) {
+        setMessage(els.exportMessage, '先にログインしてください。', 'warn');
+        return;
+      }
+
+      try {
+        let from = 0;
+        const size = 1000;
+        let all = [];
+        while (true) {
+          const { data, error } = await supabase
+            .from('study_sessions')
+            .select('mode, idle_category, started_at, ended_at, created_at, updated_at')
+            .order('started_at', { ascending: true })
+            .range(from, from + size - 1);
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          all = all.concat(data);
+          if (data.length < size) break;
+          from += size;
+        }
+
+        const lines = [
+          ['mode', 'idle_category', 'started_at', 'ended_at', 'duration_seconds', 'created_at', 'updated_at'].join(',')
+        ];
+        for (const row of all) {
+          lines.push([
+            csvCell(row.mode),
+            csvCell(row.idle_category || ''),
+            csvCell(row.started_at),
+            csvCell(row.ended_at || ''),
+            sessionDurationSeconds(row),
+            csvCell(row.created_at || ''),
+            csvCell(row.updated_at || '')
+          ].join(','));
+        }
+
+        const blob = new Blob(["\ufeff" + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 10);
+        a.href = URL.createObjectURL(blob);
+        a.download = `study_tracker_${stamp}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        setMessage(els.exportMessage, `${all.length}件を書き出しました。`, 'ok');
+      } catch (e) {
+        setMessage(els.exportMessage, 'CSV出力に失敗しました: ' + readableError(e), 'danger');
+      }
+    }
+
+    function buildDailyBuckets(rows, days) {
+      const keys = getRecentDateKeys(days);
+      const daily = {};
+      keys.forEach((k) => { daily[k] = blankBucket(); });
+
+      const startBoundary = new Date();
+      startBoundary.setDate(startBoundary.getDate() - (days - 1));
+      startBoundary.setHours(0,0,0,0);
+
+      const now = new Date();
+
+      for (const session of rows) {
+        const mode = session.mode;
+        if (!['study', 'idle'].includes(mode)) continue;
+
+        let start = new Date(session.started_at);
+        let end = session.ended_at ? new Date(session.ended_at) : now;
+        if (!(start < end)) continue;
+        if (end < startBoundary) continue;
+
+        if (start < startBoundary) start = new Date(startBoundary);
+
+        while (start < end) {
+          const nextMidnight = new Date(start);
+          nextMidnight.setHours(24,0,0,0);
+          const chunkEnd = end < nextMidnight ? end : nextMidnight;
+          const key = dateKey(start);
+          if (!daily[key]) daily[key] = blankBucket();
+          const seconds = Math.max(0, Math.floor((chunkEnd - start) / 1000));
+          daily[key][mode] += seconds;
+          if (mode === 'idle') {
+            daily[key][idleCategoryKey(session.idle_category)] += seconds;
+          }
+          start = chunkEnd;
+        }
+      }
+      return daily;
+    }
+
+    function blankBucket() {
+      return { study: 0, idle: 0, break: 0, youtube: 0, other: 0 };
+    }
+
+    function getRecentDateKeys(days) {
+      const arr = [];
+      const d = new Date();
+      d.setHours(0,0,0,0);
+      for (let i = 0; i < days; i++) {
+        const copy = new Date(d);
+        copy.setDate(copy.getDate() - i);
+        arr.push(dateKey(copy));
+      }
+      return arr;
+    }
+
+    function dateKey(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function sumKeys(daily, keys) {
+      return keys.reduce((acc, key) => {
+        const row = daily[key] || blankBucket();
+        acc.study += row.study;
+        acc.idle += row.idle;
+        acc.break += row.break;
+        acc.youtube += row.youtube;
+        acc.other += row.other;
+        return acc;
+      }, blankBucket());
+    }
+
+    function countStarts(rows, days) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - (days - 1));
+      cutoff.setHours(0,0,0,0);
+      return rows.filter((s) => s.mode === 'study' && new Date(s.started_at) >= cutoff).length;
+    }
+
+    function longestStudySeconds(rows, days) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - (days - 1));
+      cutoff.setHours(0,0,0,0);
+      let max = 0;
+      for (const s of rows) {
+        if (s.mode !== 'study') continue;
+        if (new Date(s.started_at) < cutoff && (!s.ended_at || new Date(s.ended_at) < cutoff)) continue;
+        const sec = sessionDurationSeconds(s);
+        if (sec > max) max = sec;
+      }
+      return max;
+    }
+
+    function sessionDurationSeconds(session) {
+      const start = new Date(session.started_at);
+      const end = session.ended_at ? new Date(session.ended_at) : new Date();
+      return Math.max(0, Math.floor((end - start) / 1000));
+    }
+
+    function idleCategoryKey(value) {
+      return IDLE_CATEGORIES.includes(value) ? value : 'other';
+    }
+
+    function idleCategoryLabel(value) {
+      const key = idleCategoryKey(value);
+      return key === 'break' ? '休憩' : key === 'youtube' ? 'YouTube' : 'その他';
+    }
+
+    function formatSeconds(totalSeconds) {
+      const sec = Math.max(0, Math.floor(totalSeconds));
+      const h = String(Math.floor(sec / 3600)).padStart(2, '0');
+      const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+      const s = String(sec % 60).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    function percent(part, total) {
+      if (!total) return '0%';
+      return `${Math.round((part / total) * 100)}%`;
+    }
+
+    function formatDateTime(iso) {
+      if (!iso) return '-';
+      const d = new Date(iso);
+      return d.toLocaleString();
+    }
+
+    function readableError(e) {
+      if (!e) return '不明なエラー';
+      if (typeof e === 'string') return e;
+      return e.message || JSON.stringify(e);
+    }
+
+    function setStatus(text, kind) {
+      els.statusText.textContent = text;
+      els.statusDot.className = 'dot ' + (kind || 'stop');
+    }
+
+    function setMessage(el, text, kind='') {
+      el.textContent = text;
+      el.className = `tiny ${kind === 'ok' ? 'ok' : kind === 'warn' ? 'warn' : kind === 'danger' ? 'danger-t' : 'muted'}`;
+    }
+
+    function csvCell(value) {
+      const v = String(value ?? '');
+      return `"${v.replaceAll('"', '""')}"`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+  </script>
+
+</body>
+</html>
+
   <title>勉強・非勉強トラッカー（同期版）</title>
   <style>
     :root{
