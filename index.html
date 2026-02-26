@@ -723,9 +723,9 @@
       els.syncNowBtn.addEventListener('click', refreshAllFromServer);
       els.exportCsvBtn.addEventListener('click', exportCsv);
       els.chartDaysSelect.addEventListener('change', renderDailyChart);
-      window.addEventListener('focus', refreshAllFromServer);
+      window.addEventListener('focus', () => { if (!pendingSwitch && !switchInFlight) refreshAllFromServer(); });
       document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) refreshAllFromServer();
+        if (!document.hidden && !pendingSwitch && !switchInFlight) refreshAllFromServer();
       });
     }
 
@@ -899,7 +899,7 @@
       if (switchInFlight) return;
       switchInFlight = true;
       const requestStartedAtMs = Date.now();
-      const switchedAtIso = new Date(requestStartedAtMs).toISOString();
+      const localSwitchedAtIso = new Date(requestStartedAtMs).toISOString();
       const snapshot = {
         currentSession: currentSession ? { ...currentSession } : null,
         sessions30: Array.isArray(sessions30) ? sessions30.map((s) => ({ ...s })) : [],
@@ -908,9 +908,10 @@
       pendingSwitch = {
         mode,
         idleCategory,
-        freezeAt: switchedAtIso
+        freezeAt: localSwitchedAtIso,
+        localStartedAt: localSwitchedAtIso
       };
-      applyOptimisticSwitch(mode, idleCategory, switchedAtIso);
+      applyOptimisticSwitch(mode, idleCategory, localSwitchedAtIso);
       renderAll();
       setMessage(els.trackerMessage, '切替中...', 'warn');
       try {
@@ -922,7 +923,7 @@
 
         const row = Array.isArray(data) ? data[0] : data;
         syncServerOffset(row?.switched_at, requestStartedAtMs, Date.now());
-        applySwitchResult(mode, idleCategory, row);
+        applySwitchResult(mode, idleCategory, row, localSwitchedAtIso);
         pendingSwitch = null;
         renderAll();
 
@@ -935,7 +936,9 @@
         }
         setMessage(els.trackerMessage, labels[mode], 'ok');
 
-        refreshAllFromServer();
+        setTimeout(() => {
+          if (!switchInFlight && !pendingSwitch) refreshAllFromServer();
+        }, 10000);
       } catch (e) {
         restoreSnapshot(snapshot);
         pendingSwitch = null;
@@ -957,11 +960,11 @@
         renderAll();
         return;
       }
+      if (pendingSwitch || switchInFlight) {
+        return;
+      }
       try {
         await Promise.all([fetchCurrentSession(), fetchLast30Days(), fetchUserSettings()]);
-        if (!pendingSwitch || isPendingSwitchConfirmed()) {
-          pendingSwitch = null;
-        }
         lastSync = new Date();
         renderAll();
       } catch (e) {
@@ -983,8 +986,8 @@
       return false;
     }
 
-    function applySwitchResult(mode, idleCategory, row) {
-      const switchedAt = row?.switched_at || new Date().toISOString();
+    function applySwitchResult(mode, idleCategory, row, localStartedAtIso = null) {
+      const switchedAt = localStartedAtIso || row?.switched_at || new Date().toISOString();
       const normalizedSwitchedAt = new Date(switchedAt).toISOString();
 
       const existing = Array.isArray(sessions30) ? sessions30.map((s) => ({ ...s })) : [];
@@ -1000,15 +1003,16 @@
             id: row.current_id,
             mode: row.current_mode,
             idle_category: row.current_idle_category,
-            started_at: row.current_started_at,
+            started_at: normalizedSwitchedAt,
             ended_at: row.current_ended_at || null,
-            created_at: row.current_started_at,
-            updated_at: normalizedSwitchedAt
+            created_at: normalizedSwitchedAt,
+            updated_at: normalizedSwitchedAt,
+            server_started_at: row.current_started_at
           }
         : null;
 
       if (nextCurrent) {
-        const idx = existing.findIndex((s) => s.id === nextCurrent.id);
+        const idx = existing.findIndex((s) => s.id === nextCurrent.id || String(s.id).startsWith('__optimistic__'));
         if (idx >= 0) {
           existing[idx] = { ...existing[idx], ...nextCurrent };
         } else {
@@ -1083,11 +1087,14 @@
     function startSyncLoops() {
       stopSyncLoops();
       syncTickId = setInterval(async () => {
-        if (pendingSwitch) return;
+        if (pendingSwitch || switchInFlight) return;
         await fetchCurrentSession();
         renderAll();
       }, 15000);
-      hardRefreshId = setInterval(refreshAllFromServer, 60000);
+      hardRefreshId = setInterval(async () => {
+        if (pendingSwitch || switchInFlight) return;
+        await refreshAllFromServer();
+      }, 60000);
     }
 
     function stopSyncLoops() {
