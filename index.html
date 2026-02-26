@@ -899,11 +899,18 @@
       if (switchInFlight) return;
       switchInFlight = true;
       const requestStartedAtMs = Date.now();
+      const switchedAtIso = new Date(requestStartedAtMs).toISOString();
+      const snapshot = {
+        currentSession: currentSession ? { ...currentSession } : null,
+        sessions30: Array.isArray(sessions30) ? sessions30.map((s) => ({ ...s })) : [],
+        lastSync: lastSync ? lastSync.toISOString() : null,
+      };
       pendingSwitch = {
         mode,
         idleCategory,
-        freezeAt: new Date(requestStartedAtMs).toISOString()
+        freezeAt: switchedAtIso
       };
+      applyOptimisticSwitch(mode, idleCategory, switchedAtIso);
       renderAll();
       setMessage(els.trackerMessage, '切替中...', 'warn');
       try {
@@ -930,6 +937,7 @@
 
         refreshAllFromServer();
       } catch (e) {
+        restoreSnapshot(snapshot);
         pendingSwitch = null;
         renderAll();
         const msg = readableError(e);
@@ -1125,6 +1133,50 @@
       return pendingSwitch?.freezeAt ? new Date(pendingSwitch.freezeAt) : null;
     }
 
+    function applyOptimisticSwitch(mode, idleCategory, switchedAtIso) {
+      const switchedAt = new Date(switchedAtIso).toISOString();
+      const existing = Array.isArray(sessions30) ? sessions30.map((s) => ({ ...s })) : [];
+
+      for (const item of existing) {
+        if (!item.ended_at) {
+          item.ended_at = switchedAt;
+          item.updated_at = switchedAt;
+        }
+      }
+
+      if (mode === 'stop') {
+        sessions30 = existing
+          .sort((a, b) => new Date(b.started_at) - new Date(a.started_at))
+          .slice(0, 5000);
+        currentSession = null;
+        return;
+      }
+
+      const optimisticSession = {
+        id: `__optimistic__${Date.now()}`,
+        mode,
+        idle_category: mode === 'idle' ? idleCategory : null,
+        started_at: switchedAt,
+        ended_at: null,
+        created_at: switchedAt,
+        updated_at: switchedAt,
+        optimistic: true
+      };
+
+      existing.unshift(optimisticSession);
+      sessions30 = existing
+        .sort((a, b) => new Date(b.started_at) - new Date(a.started_at))
+        .slice(0, 5000);
+      currentSession = optimisticSession;
+    }
+
+    function restoreSnapshot(snapshot) {
+      if (!snapshot) return;
+      currentSession = snapshot.currentSession ? { ...snapshot.currentSession } : null;
+      sessions30 = Array.isArray(snapshot.sessions30) ? snapshot.sessions30.map((s) => ({ ...s })) : [];
+      lastSync = snapshot.lastSync ? new Date(snapshot.lastSync) : lastSync;
+    }
+
     function isPendingSwitchConfirmed() {
       if (!pendingSwitch) return true;
       if (pendingSwitch.mode === 'stop') return !currentSession;
@@ -1137,29 +1189,22 @@
     }
 
     function renderCurrentBlock() {
-      if (pendingSwitch) {
-        const kind = pendingSwitch.mode === 'study' ? 'study' : pendingSwitch.mode === 'idle' ? 'idle' : 'stop';
-        const label = pendingSwitch.mode === 'study'
-          ? '勉強に切替中...'
-          : pendingSwitch.mode === 'idle'
-            ? `${idleCategoryLabel(pendingSwitch.idleCategory)} に切替中...`
-            : '停止に切替中...';
+      if (currentSession) {
+        const kind = currentSession.mode === 'study' ? 'study' : 'idle';
+        const syncing = pendingSwitch ? '（同期中...）' : '';
+        const label = currentSession.mode === 'study'
+          ? `勉強中${syncing}`
+          : `非勉強中（${idleCategoryLabel(currentSession.idle_category)}）${syncing}`;
         els.currentModeLabel.textContent = label;
-        els.currentStartedAt.textContent = pendingSwitch.mode === 'stop'
-          ? '開始: -'
-          : '開始: ' + formatDateTime(pendingSwitch.freezeAt);
+        els.currentStartedAt.textContent = '開始: ' + formatDateTime(currentSession.started_at);
         setStatus(label, kind);
         return;
       }
 
-      if (currentSession) {
-        const kind = currentSession.mode === 'study' ? 'study' : 'idle';
-        const label = currentSession.mode === 'study'
-          ? '勉強中'
-          : `非勉強中（${idleCategoryLabel(currentSession.idle_category)}）`;
-        els.currentModeLabel.textContent = label;
-        els.currentStartedAt.textContent = '開始: ' + formatDateTime(currentSession.started_at);
-        setStatus(label, kind);
+      if (pendingSwitch && pendingSwitch.mode === 'stop') {
+        els.currentModeLabel.textContent = '停止中（同期中...）';
+        els.currentStartedAt.textContent = '開始: -';
+        setStatus('停止中（同期中...）', 'stop');
       } else if (currentUser) {
         els.currentModeLabel.textContent = '停止中';
         els.currentStartedAt.textContent = '開始: -';
@@ -1176,17 +1221,6 @@
     }
 
     function renderCurrentElapsed() {
-      if (pendingSwitch) {
-        if (pendingSwitch.mode === 'stop') {
-          els.currentElapsed.textContent = '00:00:00';
-          return;
-        }
-        const start = new Date(pendingSwitch.freezeAt);
-        const now = getDisplayNow();
-        const seconds = Math.max(0, Math.floor((now - start) / 1000));
-        els.currentElapsed.textContent = formatSeconds(seconds);
-        return;
-      }
       if (!currentSession) {
         els.currentElapsed.textContent = '00:00:00';
         return;
@@ -1210,27 +1244,6 @@
     function getRenderableSessions(now = getDisplayNow()) {
       const rows = Array.isArray(sessions30) ? sessions30.map((s) => ({ ...s })) : [];
       const openRows = rows.filter((s) => !s.ended_at);
-
-      if (pendingSwitch) {
-        const cutoff = pendingSwitch.freezeAt;
-        for (const row of openRows) {
-          row.ended_at = cutoff;
-          row.updated_at = cutoff;
-        }
-        if (pendingSwitch.mode !== 'stop') {
-          rows.unshift({
-            id: '__pending__',
-            mode: pendingSwitch.mode,
-            idle_category: pendingSwitch.idleCategory,
-            started_at: cutoff,
-            ended_at: null,
-            created_at: cutoff,
-            updated_at: cutoff,
-            pending: true
-          });
-        }
-        return rows;
-      }
 
       if (currentSession) {
         const switchTime = currentSession.started_at;
